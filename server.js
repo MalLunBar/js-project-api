@@ -2,6 +2,7 @@ import cors from "cors"
 import express from "express"
 import listEndpoints from "express-list-endpoints"
 import thoughtsData from "./data.json"
+import mongoose from "mongoose"
 
 //variable to not modify the original data
 let thoughts = [...thoughtsData]
@@ -15,6 +16,12 @@ const app = express()
 // Add middlewares to enable cors and json body parsing
 app.use(cors())
 app.use(express.json())
+
+const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/thoughts"
+mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.Promise = Promise
+//Fortsätt här och ändra local host namn sen 
+
 
 // Start defining your routes here
 app.get("/", (req, res) => {
