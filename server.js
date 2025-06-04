@@ -1,8 +1,12 @@
 import cors from "cors"
 import express from "express"
 import listEndpoints from "express-list-endpoints"
-import thoughtsData from "./data.json"
 import mongoose from "mongoose"
+import dotenv from "dotenv"
+
+import thoughtsData from "./data.json"
+
+dotenv.config() 
 
 //variable to not modify the original data
 let thoughts = [...thoughtsData]
