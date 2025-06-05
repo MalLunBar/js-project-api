@@ -4,7 +4,7 @@ import listEndpoints from "express-list-endpoints"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
 
-// import thoughtsData from "./data.json"
+import thoughtsData from "./data.json"
 
 dotenv.config()
 
@@ -21,30 +21,27 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-
-
 const thoughtSchema = new mongoose.Schema({
-  _id: String,
+
   message: String,
   hearts: Number,
   createdAt: {
     type: Date,
-    default: Date.now()
+    default: Date.now
   }
 })
 //Här lägg
 const Thought = mongoose.model("Thought", thoughtSchema)
 
-// if (process.env.RESET_DB) {
-//   const seedDatabase = async () => {
-//     await Thought.deleteMany({})
-//     thoughtsData.forEach(thought => {
-//       new Thought(thought).save()
-//     })
-//   }
-//   seedDatabase()
-// }
-
+if (process.env.RESET_DB) {
+  const seedDatabase = async () => {
+    await Thought.deleteMany({})
+    thoughtsData.forEach(thought => {
+      new Thought(thought).save()
+    })
+  }
+  seedDatabase()
+}
 
 // Start defining your routes here
 app.get("/", (req, res) => {
@@ -54,8 +51,6 @@ app.get("/", (req, res) => {
     endpoints: endpoints
   })
 })
-
-
 
 //endpoint for getting all thoughts 
 app.get("/thoughts", async (req, res) => {
@@ -105,7 +100,6 @@ app.get("/thoughts", async (req, res) => {
 })
 
 // endpoint for getting one thought
-
 app.get("/thoughts/:id", async (req, res) => {
   const { id } = req.params
 
@@ -141,9 +135,7 @@ app.get("/thoughts/:id", async (req, res) => {
   }
 })
 
-
 //endpoint for deleting a thought
-
 app.delete("/thoughts/:id", async (req, res) => {
   const { id } = req.params
 
@@ -180,17 +172,25 @@ app.delete("/thoughts/:id", async (req, res) => {
   }
 })
 
-// app.delete("/thoughts/:id", (req, res) => {
-//   const index = thoughts.findIndex(thought => thought._id === req.params.id)
+app.post("/thoughts", async (req, res) => {
+  const { message } = req.body
 
-//   if (index == -1) {
-//     return res.status(404).json({ error: "thought dosnt exist" })
-//   }
+  try {
+    const newThought = await new Thought({ message }).save()
 
-//   const deletedThought = thoughts.splice(index, 1)[0]
-//   res.json({ message: "Thought deleted", deletedThought })
-// })
-
+    res.status(201).json({
+      success: true,
+      response: newThought,
+      message: "Thought was successfully created"
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      response: error,
+      message: "Couldn't create thought"
+    })
+  }
+})
 
 // Start the server
 app.listen(port, () => {
