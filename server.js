@@ -24,7 +24,10 @@ app.use(express.json())
 const thoughtSchema = new mongoose.Schema({
 
   message: String,
-  hearts: Number,
+  hearts: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -189,6 +192,17 @@ app.post("/thoughts", async (req, res) => {
       response: error,
       message: "Couldn't create thought"
     })
+  }
+})
+
+app.patch("/thoughts/:id", async (req, res) => {
+  const { id } = req.params
+  const { newhearts } = req.body
+
+  try {
+    const thought = await Thought.findByIdAndUpdate(id, { hearts: newhearts })
+  } catch (error) {
+
   }
 })
 
