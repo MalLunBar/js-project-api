@@ -180,6 +180,7 @@ app.post("/thoughts", async (req, res) => {
 
   try {
     const newThought = await new Thought({ message }).save()
+    console.log("Created thought:", newThought)
 
     res.status(201).json({
       success: true,
@@ -200,9 +201,23 @@ app.patch("/thoughts/:id", async (req, res) => {
   const { newhearts } = req.body
 
   try {
-    const thought = await Thought.findByIdAndUpdate(id, { hearts: newhearts })
+    const thought = await Thought.findByIdAndUpdate(id, { hearts: newhearts }, { new: true })
+    if (!thought) {
+      return res.status(404).json({
+        success: false,
+        message: "Thought not found"
+      })
+    }
+    res.status(200).json({
+      success: true,
+      response: thought
+    })
   } catch (error) {
-
+    res.status(500).json({
+      success: false,
+      message: "Failed to update Likes",
+      response: error
+    })
   }
 })
 
