@@ -196,7 +196,7 @@ app.post("/thoughts", async (req, res) => {
   }
 })
 
-app.patch("/thoughts/:id", async (req, res) => {
+app.patch("/thoughts/:id/like", async (req, res) => {
   const { id } = req.params
 
   try {
@@ -219,7 +219,7 @@ app.patch("/thoughts/:id", async (req, res) => {
       success: false,
       response: error,
       message: "Server Error! Failed to update Likes",
-      
+
     })
   }
 })
