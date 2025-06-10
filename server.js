@@ -36,15 +36,15 @@ const thoughtSchema = new mongoose.Schema({
 //Här lägg
 const Thought = mongoose.model("Thought", thoughtSchema)
 
-if (process.env.RESET_DB) {
-  const seedDatabase = async () => {
-    await Thought.deleteMany({})
-    thoughtsData.forEach(thought => {
-      new Thought(thought).save()
-    })
-  }
-  seedDatabase()
-}
+// if (process.env.RESET_DB) {
+//   const seedDatabase = async () => {
+//     await Thought.deleteMany({})
+//     thoughtsData.forEach(thought => {
+//       new Thought(thought).save()
+//     })
+//   }
+//   seedDatabase()
+// }
 
 // Start defining your routes here
 app.get("/", (req, res) => {
@@ -198,25 +198,28 @@ app.post("/thoughts", async (req, res) => {
 
 app.patch("/thoughts/:id", async (req, res) => {
   const { id } = req.params
-  const { newhearts } = req.body
 
   try {
-    const thought = await Thought.findByIdAndUpdate(id, { hearts: newhearts }, { new: true })
+    const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
+
     if (!thought) {
       return res.status(404).json({
         success: false,
+        response: null,
         message: "Thought not found"
       })
     }
     res.status(200).json({
       success: true,
-      response: thought
+      response: thought,
+      message: "Updated"
     })
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Failed to update Likes",
-      response: error
+      response: error,
+      message: "Server Error! Failed to update Likes",
+      
     })
   }
 })
