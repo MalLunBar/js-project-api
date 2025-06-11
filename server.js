@@ -228,7 +228,7 @@ app.patch("/thoughts/:id/like", async (req, res) => {
 //for updating a thought (editing the message)
 app.patch("/thoughts/:id/edit", async (req, res) => {
   const { id } = req.params
-  const { newMessage } = req.body
+  const { message: newMessage } = req.body
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       success: false,
