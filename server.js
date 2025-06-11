@@ -238,7 +238,7 @@ app.patch("/thoughts/:id/edit", async (req, res) => {
   }
 
   try {
-    const thought = await Thought.findByIdAndUpdate({ id }, { message: newMessage }, { new: true, runValidators: true })
+    const thought = await Thought.findByIdAndUpdate( id, { message: newMessage }, { new: true, runValidators: true })
 
     if (!thought) {
       return res.status(404).json({
@@ -256,7 +256,7 @@ app.patch("/thoughts/:id/edit", async (req, res) => {
     res.status(500).json({
       success: false,
       response: error,
-      message: "Server Error! Failed to update Likes",
+      message: "Server Error! Failed to update Message",
 
     })
   }
