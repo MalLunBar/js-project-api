@@ -138,6 +138,8 @@ app.get("/thoughts/:id", async (req, res) => {
   }
 })
 
+
+
 //endpoint for deleting a thought
 app.delete("/thoughts/:id", async (req, res) => {
   const { id } = req.params
@@ -201,6 +203,42 @@ app.patch("/thoughts/:id/like", async (req, res) => {
 
   try {
     const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
+
+    if (!thought) {
+      return res.status(404).json({
+        success: false,
+        response: null,
+        message: "Thought not found"
+      })
+    }
+    res.status(200).json({
+      success: true,
+      response: thought,
+      message: "Updated"
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      response: error,
+      message: "Server Error! Failed to update Likes",
+
+    })
+  }
+})
+
+app.patch("/thoughts/:id", async (req, res) => {
+  const { id } = req.params
+  const { newMessage } = req.body
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      response: [],
+      message: "Invalid id"
+    })
+  }
+
+  try {
+    const thought = await Thought.findByIdAndUpdate({ id }, { message: newMessage }, { new: true, runValidators: true })
 
     if (!thought) {
       return res.status(404).json({
