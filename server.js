@@ -2,11 +2,15 @@ import cors from "cors"
 import express from "express"
 import listEndpoints from "express-list-endpoints"
 import mongoose from "mongoose"
+
+import userRoutes from "./routes/userRoutes.js"
+import thoughtRoutes from "./routes/thoughtsRoutes.js"
+import { authenticateUser } from "./middleware/authMiddleware.js"
+
 import dotenv from "dotenv"
-import crypto from "crypto"
-import bcrypt from "bcrypt-nodejs"
+
 // Import the data from the JSON file
-import thoughtsData from "./data.json"
+// import thoughtsData from "./data.json"
 
 
 dotenv.config()
@@ -24,64 +28,6 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-
-// Create a schema for the users
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  }, // Passwords should be hashed in a real application
-  accessToken: {
-    type: String,
-    default: crypto.randomBytes(128).toString("hex")
-  } // Generate a random access token
-
-})
-const User = mongoose.model("User", userSchema)
-
-const authenticateUser = async (req, res, next) => {
-  const user = await User.findOne({ accessToken: req.headers.authorization })
-  if (user) {
-    req.user = user
-    next()
-  }else {
-    res.status(401).json({
-      success: false,
-      loggedOut: true,
-      message: "Unauthorized! Please provide a valid access token."
-    })
-  }
-}
-
-
-
-
-
-// Create a schema for the thoughts
-const thoughtSchema = new mongoose.Schema({
-
-  message: String,
-  hearts: {
-    type: Number,
-    default: 0
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-})
-
-const Thought = mongoose.model("Thought", thoughtSchema)
 
 // if (process.env.RESET_DB) {
 //   const seedDatabase = async () => {
@@ -101,47 +47,7 @@ app.get("/secret", (req, res) => {
     secret: "This is a super secret message! 🤫"
   })
 })
-//Login endpoint
-app.post("/sessions", async (req, res) => {
-  const user = await User.findOne({ email: req.body.email })
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    res.json({
-      userId: user._id,
-      accessToken: user.accessToken
-    })
-    //Maybe some error handeling here 
-  }else {
-    re.json({ notFound: true, message: "User not found or password is incorrect" })
-  }
-})
-//Create a new user (registration endpoint)
-app.post("/users", async (req, res) => {
-  try {
-    const { name, email, password } = req.body
-    const salt = bcrypt.genSaltSync()
-    const user = new User({
-      name,
-      email,
-      password: bcrypt.hashSync(password, salt) // Hash the password before saving
-    })
-    user.save()
-    //If uer is OK 
-    res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      id: user._id,
-      accessToken: user.accessToken
 
-    })
-
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      response: error,
-      message: "Failed to create user. Please check your input."
-    })
-  }
-})
 
 // Start defining your routes here
 app.get("/", (req, res) => {
@@ -152,212 +58,9 @@ app.get("/", (req, res) => {
   })
 })
 
-//endpoint for getting all thoughts 
-app.get("/thoughts", async (req, res) => {
-  const { likes, minLikes } = req.query
 
-  const query = {}
-
-  //Make sure there is error handelning when parameter is not a number 
-
-  if (likes !== undefined) {
-    const numLikes = +likes
-    if (isNaN(numLikes)) {
-      return res.status(400).json({ error: "Query parameter 'likes' must be a number." })
-    }
-    query.hearts = numLikes
-  }
-
-  if (minLikes !== undefined) {
-    const numMinLikes = +minLikes
-    if (isNaN(numMinLikes)) {
-      return res.status(400).json({ error: "Query parameter 'likes' must be a number." })
-    }
-    query.hearts = { $gte: numMinLikes }
-  }
-
-  try {
-    const filteredThoughts = await Thought.find(query)
-
-    if (filteredThoughts.length === 0) {
-      return res.status(404).json({
-        success: false,
-        response: [],
-        message: "No thougth found for that query. Please try another one"
-      })
-    }
-    res.status(200).json({
-      success: true,
-      response: filteredThoughts
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Server error! Failed to fetch thoughts."
-    })
-  }
-})
-
-// endpoint for getting one thought
-app.get("/thoughts/:id", async (req, res) => {
-  const { id } = req.params
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      success: false,
-      response: [],
-      message: "Invalid id"
-    })
-  }
-
-  try {
-    const thought = await Thought.findById(id)
-
-    if (!thought) {
-      return res.status(404).json({
-        success: false,
-        response: [],
-        message: "No thougth found"
-      })
-    }
-
-    res.status(200).json({
-      success: true,
-      response: thought
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Server error! Failed to fetch thoughts."
-    })
-  }
-})
-
-
-
-//endpoint for deleting a thought
-app.delete("/thoughts/:id", async (req, res) => {
-  const { id } = req.params
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      success: false,
-      response: [],
-      message: "Could not delete! Invalid id"
-    })
-  }
-
-  try {
-    const thought = await Thought.findByIdAndDelete(id)
-
-    if (!thought) {
-      return res.status(404).json({
-        success: false,
-        response: [],
-        message: "No thougth found"
-      })
-    }
-
-    res.status(200).json({
-      success: true,
-      response: thought,
-      message: "Was successfully deleted"
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Server error! Failed to fetch thoughts."
-    })
-  }
-})
-
-app.post("/thoughts", async (req, res) => {
-  const { message } = req.body
-
-  try {
-    const newThought = await new Thought({ message }).save()
-    console.log("Created thought:", newThought)
-
-    res.status(201).json({
-      success: true,
-      response: newThought,
-      message: "Thought was successfully created"
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Couldn't create thought"
-    })
-  }
-})
-
-app.patch("/thoughts/:id/like", async (req, res) => {
-  const { id } = req.params
-
-  try {
-    const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
-
-    if (!thought) {
-      return res.status(404).json({
-        success: false,
-        response: null,
-        message: "Thought not found"
-      })
-    }
-    res.status(200).json({
-      success: true,
-      response: thought,
-      message: "Updated"
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Server Error! Failed to update Likes",
-
-    })
-  }
-})
-//for updating a thought (editing the message)
-app.patch("/thoughts/:id/edit", async (req, res) => {
-  const { id } = req.params
-  const { message: newMessage } = req.body
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      success: false,
-      response: [],
-      message: "Invalid id"
-    })
-  }
-
-  try {
-    const thought = await Thought.findByIdAndUpdate(id, { message: newMessage }, { new: true, runValidators: true })
-
-    if (!thought) {
-      return res.status(404).json({
-        success: false,
-        response: null,
-        message: "Thought not found"
-      })
-    }
-    res.status(200).json({
-      success: true,
-      response: thought,
-      message: "Updated"
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      response: error,
-      message: "Server Error! Failed to update Message",
-
-    })
-  }
-})
+app.use("/users", userRoutes)
+app.use("/thoughts", thoughtRoutes)
 
 // Start the server
 app.listen(port, () => {
