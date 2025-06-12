@@ -3,8 +3,11 @@ import express from "express"
 import listEndpoints from "express-list-endpoints"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
-
+import crypto from "crypto"
+import bcrypt from "bcrypt-nodejs"
+// Import the data from the JSON file
 import thoughtsData from "./data.json"
+
 
 dotenv.config()
 
@@ -21,6 +24,50 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+
+// Create a schema for the users
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  }, // Passwords should be hashed in a real application
+  accessToken: {
+    type: String,
+    default: crypto.randomBytes(128).toString("hex")
+  } // Generate a random access token
+
+})
+const User = mongoose.model("User", userSchema)
+
+const authenticateUser = async (req, res, next) => {
+  const user = await User.findOne({ accessToken: req.headers.authorization })
+  if (user) {
+    req.user = user
+    next()
+  }else {
+    res.status(401).json({
+      success: false,
+      loggedOut: true,
+      message: "Unauthorized! Please provide a valid access token."
+    })
+  }
+}
+
+
+
+
+
+// Create a schema for the thoughts
 const thoughtSchema = new mongoose.Schema({
 
   message: String,
@@ -33,7 +80,7 @@ const thoughtSchema = new mongoose.Schema({
     default: Date.now
   }
 })
-//Här lägg
+
 const Thought = mongoose.model("Thought", thoughtSchema)
 
 // if (process.env.RESET_DB) {
@@ -45,6 +92,56 @@ const Thought = mongoose.model("Thought", thoughtSchema)
 //   }
 //   seedDatabase()
 // }
+
+//middleware that checkes access token when user tries to access the secret endpoint
+app.get("/secret", authenticateUser)
+//Super secret endpoint 
+app.get("/secret", (req, res) => {
+  res.json({
+    secret: "This is a super secret message! 🤫"
+  })
+})
+//Login endpoint
+app.post("/sessions", async (req, res) => {
+  const user = await User.findOne({ email: req.body.email })
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
+    res.json({
+      userId: user._id,
+      accessToken: user.accessToken
+    })
+    //Maybe some error handeling here 
+  }else {
+    re.json({ notFound: true, message: "User not found or password is incorrect" })
+  }
+})
+//Create a new user (registration endpoint)
+app.post("/users", async (req, res) => {
+  try {
+    const { name, email, password } = req.body
+    const salt = bcrypt.genSaltSync()
+    const user = new User({
+      name,
+      email,
+      password: bcrypt.hashSync(password, salt) // Hash the password before saving
+    })
+    user.save()
+    //If uer is OK 
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      id: user._id,
+      accessToken: user.accessToken
+
+    })
+
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      response: error,
+      message: "Failed to create user. Please check your input."
+    })
+  }
+})
 
 // Start defining your routes here
 app.get("/", (req, res) => {
@@ -238,7 +335,7 @@ app.patch("/thoughts/:id/edit", async (req, res) => {
   }
 
   try {
-    const thought = await Thought.findByIdAndUpdate( id, { message: newMessage }, { new: true, runValidators: true })
+    const thought = await Thought.findByIdAndUpdate(id, { message: newMessage }, { new: true, runValidators: true })
 
     if (!thought) {
       return res.status(404).json({
