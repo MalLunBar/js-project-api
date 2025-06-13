@@ -6,19 +6,6 @@ import { User } from '../models/User.js'
 
 const router = express.Router()
 
-//Login endpoint actually "/users/login"
-router.post("/login", async (req, res) => {
-  const user = await User.findOne({ email: req.body.email })
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    res.json({
-      userId: user._id,
-      accessToken: user.accessToken
-    })
-    //Maybe some error handeling here 
-  } else {
-    re.json({ notFound: true, message: "User not found or password is incorrect" })
-  }
-})
 //Create a new user (registration endpoint actually "/users/signup")
 router.post("/signup", async (req, res) => {
   try {
@@ -30,7 +17,7 @@ router.post("/signup", async (req, res) => {
       password: bcrypt.hashSync(password, salt) // Hash the password before saving
     })
     user.save()
-    //If uer is OK 
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -47,5 +34,20 @@ router.post("/signup", async (req, res) => {
     })
   }
 })
+
+//Login endpoint actually "/users/login"
+router.post("/login", async (req, res) => {
+  const user = await User.findOne({ email: req.body.email })
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
+    res.json({
+      userId: user._id,
+      accessToken: user.accessToken
+    })
+    //Maybe some error handeling here 
+  } else {
+    re.json({ notFound: true, message: "User not found or password is incorrect" })
+  }
+})
+
 
 export default router
