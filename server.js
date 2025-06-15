@@ -39,15 +39,6 @@ app.use(express.json())
 //   seedDatabase()
 // }
 
-//middleware that checkes access token when user tries to access the secret endpoint
-app.get("/secret", authenticateUser)
-//Super secret endpoint 
-app.get("/secret", (req, res) => {
-  res.json({
-    secret: "This is a super secret message! 🤫"
-  })
-})
-
 
 // Start defining your routes here
 app.get("/", (req, res) => {

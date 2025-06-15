@@ -1,4 +1,5 @@
 import express from 'express'
+import mongoose from 'mongoose'
 import { Thought } from '../models/Thought.js'
 import { authenticateUser } from '../middleware/authMiddleware.js'
 
@@ -92,11 +93,14 @@ router.get("/:id", async (req, res) => {
 
 
 // endpoint for creating a thought actually "/thoughts"
-router.post("/", async (req, res) => {
+router.post("/", authenticateUser, async (req, res) => {
   const { message } = req.body
-
+  console.log("req.user:", req.user)
   try {
-    const newThought = await new Thought({ message }).save()
+    const newThought = await new Thought({
+      message,
+      user: req.user._id
+    }).save()
     console.log("Created thought:", newThought)
 
     res.status(201).json({
@@ -105,6 +109,7 @@ router.post("/", async (req, res) => {
       message: "Thought was successfully created"
     })
   } catch (error) {
+    console.log("POST error", error)
     res.status(500).json({
       success: false,
       response: error,
@@ -116,7 +121,7 @@ router.post("/", async (req, res) => {
 
 
 //delete a thought endpoint actually "/thoughts/:id"
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateUser, async (req, res) => {
   const { id } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -185,7 +190,7 @@ router.patch("/:id/like", async (req, res) => {
 
 
 //for updating a thought message (actuallt "/thoughts/:id/edit")
-router.patch("/:id/edit", async (req, res) => {
+router.patch("/:id/edit", authenticateUser, async (req, res) => {
   const { id } = req.params
   const { message: newMessage } = req.body
   if (!mongoose.Types.ObjectId.isValid(id)) {

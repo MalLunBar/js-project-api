@@ -1,6 +1,8 @@
 import { User } from '../models/User.js'
 
 export const authenticateUser = async (req, res, next) => {
+  
+  
   const user = await User.findOne({ accessToken: req.headers.authorization })
   if (user) {
     req.user = user

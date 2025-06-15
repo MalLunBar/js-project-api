@@ -1,6 +1,6 @@
 
 import express from 'express'
-import bcrypt from 'bcrypt-nodejs' // Use bcryptjs for compatibility?
+import bcrypt from 'bcryptjs'// Use bcryptjs for compatibility?
 import { User } from '../models/User.js'
 
 
@@ -9,14 +9,17 @@ const router = express.Router()
 //Create a new user (registration endpoint actually "/users/signup")
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, password } = req.body
+    //make sure email is lowercase 
+    const email = req.body.email.trim().toLowerCase()
     const salt = bcrypt.genSaltSync()
     const user = new User({
       name,
       email,
       password: bcrypt.hashSync(password, salt) // Hash the password before saving
     })
-    user.save()
+    //await to not send response before database finished saving 
+    await user.save()
 
     res.status(201).json({
       success: true,
@@ -37,15 +40,23 @@ router.post("/signup", async (req, res) => {
 
 //Login endpoint actually "/users/login"
 router.post("/login", async (req, res) => {
-  const user = await User.findOne({ email: req.body.email })
+  //make sure email is lowercase 
+  const email = req.body.email.trim().toLowerCase()
+  const user = await User.findOne({ email })
+
   if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    res.json({
+    res.status(200).json({
+      success: true,
+      accessToken: user.accessToken,
       userId: user._id,
-      accessToken: user.accessToken
+      message: "Login successful",
     })
-    //Maybe some error handeling here 
   } else {
-    re.json({ notFound: true, message: "User not found or password is incorrect" })
+    //Login failed
+    res.status(401).json({
+      success: false,
+      message: "User not found or password is incorrect",
+    });
   }
 })
 
