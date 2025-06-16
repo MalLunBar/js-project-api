@@ -133,7 +133,11 @@ router.delete("/:id", authenticateUser, async (req, res) => {
   }
 
   try {
-    const thought = await Thought.findByIdAndDelete(id)
+    //Check if this message really belong to the user thats logged in
+    const thought = await Thought.findByIdAndDelete({
+      _id: id,
+      user: req.user._id
+    })
 
     if (!thought) {
       return res.status(404).json({
@@ -163,7 +167,10 @@ router.patch("/:id/like", async (req, res) => {
   const { id } = req.params
 
   try {
-    const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
+    const thought = await Thought.findByIdAndUpdate({
+      _id: id,
+      user: req.user._id
+    }, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
 
     if (!thought) {
       return res.status(404).json({
