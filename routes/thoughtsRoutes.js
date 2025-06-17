@@ -54,6 +54,24 @@ router.get("/", async (req, res) => {
   }
 })
 
+// endpoint for getting liked thoughts actually "/thoughts/liked"
+router.get("/liked", authenticateUser, async (req, res) => {
+  const userId = req.user._id
+  try {
+    const likedThoughts = await Thought.find({ likedBy: req.user._id })
+    res.status(200).json({
+      success: true,
+      response: likedThoughts
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      response: error,
+      message: "Could not get liked thoughts"
+    })
+  }
+})
+
 // endpoint for getting one thought actually "/thoughts/:id"
 router.get("/:id", async (req, res) => {
   const { id } = req.params
@@ -89,6 +107,8 @@ router.get("/:id", async (req, res) => {
     })
   }
 })
+
+
 
 
 
@@ -165,6 +185,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 // endpoint for liking a thought actually "/thoughts/:id/like"
 router.patch("/:id/like", async (req, res) => {
   const { id } = req.params
+  
 
   try {
     const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
@@ -176,6 +197,9 @@ router.patch("/:id/like", async (req, res) => {
         message: "Thought not found"
       })
     }
+
+    // Add the user to the likedBy array if not already present
+
     res.status(200).json({
       success: true,
       response: thought,

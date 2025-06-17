@@ -15,7 +15,11 @@ const thoughtSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
-  }
+  },
+  likedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }]
 })
 
 export const Thought = mongoose.model("Thought", thoughtSchema)
