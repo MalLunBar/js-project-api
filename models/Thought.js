@@ -2,7 +2,12 @@ import mongoose from "mongoose"
 
 const thoughtSchema = new mongoose.Schema({
 
-  message: String,
+  message: {
+    type: String,
+    required: true,
+    minLength: 5,
+    maxLength: 140
+  },
   hearts: {
     type: Number,
     default: 0
@@ -16,10 +21,7 @@ const thoughtSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
-  likedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  }]
+  
 })
 
 export const Thought = mongoose.model("Thought", thoughtSchema)

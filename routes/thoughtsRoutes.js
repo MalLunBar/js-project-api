@@ -1,7 +1,9 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import { Thought } from '../models/Thought.js'
-import { authenticateUser } from '../middleware/authMiddleware.js'
+import { authenticateUser, authenticateUserLike } from '../middleware/authMiddleware.js'
+import { User } from '../models/User.js'
+import { Like } from '../models/Like.js'
 
 const router = express.Router()
 // Get all thoughts
@@ -56,9 +58,24 @@ router.get("/", async (req, res) => {
 
 // endpoint for getting liked thoughts actually "/thoughts/liked"
 router.get("/liked", authenticateUser, async (req, res) => {
+  const { minLikes } = req.query
   const userId = req.user._id
+
   try {
-    const likedThoughts = await Thought.find({ likedBy: req.user._id })
+    let likedThoughts = await Thought.find({ likedBy: userId })
+
+    if (minLikes !== undefined) {
+      const min = parseInt(minLikes)
+      if (isNaN(min)) {
+        return res.status(400).json({
+          success: false,
+          message: "Query parameter 'minLikes' must be a number."
+        })
+      }
+
+      likedThoughts = likedThoughts.filter(thought => thought.hearts >= min)
+    }
+
     res.status(200).json({
       success: true,
       response: likedThoughts
@@ -183,12 +200,45 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 
 
 // endpoint for liking a thought actually "/thoughts/:id/like"
-router.patch("/:id/like", async (req, res) => {
+router.patch("/:id/like", authenticateUserLike, async (req, res) => {
   const { id } = req.params
-  
 
   try {
-    const thought = await Thought.findByIdAndUpdate(id, { $inc: { hearts: 1 } }, { new: true, runValidators: true })
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        response: [],
+        message: "Invalid id"
+      })
+    }
+
+    // Check if the user has already liked this thought
+    if (req.user) {
+      const existingLike = await Like.findOne({
+        user: req.user._id,
+        thought: id
+      })
+
+      if (existingLike) {
+        return res.status(400).json({
+          success: false,
+          response: null,
+          message: "You have already liked this thought"
+        })
+      } else {
+        // Create a new like if the user hasn't liked this thought yet
+        await new Like({
+          user: req.user._id,
+          thought: id
+        }).save()
+      }
+    }
+
+    const thought = await Thought.findByIdAndUpdate(
+      id,
+      { $inc: { hearts: 1 } },
+      { new: true, runValidators: true }
+    )
 
     if (!thought) {
       return res.status(404).json({
@@ -198,7 +248,7 @@ router.patch("/:id/like", async (req, res) => {
       })
     }
 
-    // Add the user to the likedBy array if not already present
+
 
     res.status(200).json({
       success: true,
