@@ -2,7 +2,6 @@ import express from 'express'
 import mongoose from 'mongoose'
 import { Thought } from '../models/Thought.js'
 import { authenticateUser, authenticateUserLike } from '../middleware/authMiddleware.js'
-import { User } from '../models/User.js'
 import { Like } from '../models/Like.js'
 
 const router = express.Router()
@@ -138,13 +137,13 @@ router.get("/:id", async (req, res) => {
 // endpoint for creating a thought actually "/thoughts"
 router.post("/", authenticateUser, async (req, res) => {
   const { message } = req.body
-  console.log("req.user:", req.user)
+  
   try {
     const newThought = await new Thought({
       message,
       user: req.user._id
     }).save()
-    console.log("Created thought:", newThought)
+    
 
     res.status(201).json({
       success: true,
@@ -152,7 +151,6 @@ router.post("/", authenticateUser, async (req, res) => {
       message: "Thought was successfully created"
     })
   } catch (error) {
-    console.log("POST error", error)
     res.status(500).json({
       success: false,
       response: error,
