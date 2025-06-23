@@ -62,29 +62,35 @@ router.get("/liked", authenticateUser, async (req, res) => {
   const userId = req.user._id
 
   try {
-    let likedThoughts = await Thought.find({ likedBy: userId })
+    // 1. Find all likes by this user
+    const likes = await Like.find({ user: userId }).select('thought')
+    // 2. Extract thought IDs
+    const thoughtIds = likes.map(like => like.thought)
 
+    // 3. Build query to find those thoughts
+    const query = { _id: { $in: thoughtIds } }
     if (minLikes !== undefined) {
       const min = parseInt(minLikes)
       if (isNaN(min)) {
         return res.status(400).json({
           success: false,
-          message: "Query parameter 'minLikes' must be a number."
+          message: "Query parameter 'minLikes' must be a number.",
         })
       }
-
-      likedThoughts = likedThoughts.filter(thought => thought.hearts >= min)
+      query.hearts = { $gte: min }
     }
 
+    // 4. Find and return the liked thoughts
+    const likedThoughts = await Thought.find(query)
     res.status(200).json({
       success: true,
-      response: likedThoughts
+      response: likedThoughts,
     })
   } catch (error) {
     res.status(500).json({
       success: false,
       response: error,
-      message: "Could not get liked thoughts"
+      message: "Could not get liked thoughts.",
     })
   }
 })
