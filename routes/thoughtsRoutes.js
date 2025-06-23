@@ -137,13 +137,13 @@ router.get("/:id", async (req, res) => {
 // endpoint for creating a thought actually "/thoughts"
 router.post("/", authenticateUser, async (req, res) => {
   const { message } = req.body
-  
+
   try {
     const newThought = await new Thought({
       message,
       user: req.user._id
     }).save()
-    
+
 
     res.status(201).json({
       success: true,

@@ -5,7 +5,6 @@ import mongoose from "mongoose"
 
 import userRoutes from "./routes/userRoutes.js"
 import thoughtRoutes from "./routes/thoughtsRoutes.js"
-import { authenticateUser } from "./middleware/authMiddleware.js"
 
 import dotenv from "dotenv"
 
